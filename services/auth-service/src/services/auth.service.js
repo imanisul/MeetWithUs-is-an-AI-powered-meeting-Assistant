@@ -6,6 +6,8 @@ import {validRegisterInput} from '../validators/auth.validator.js';
 
 import {generateAccessToken, generateRefreshToken} from '../utils/jwt.js';
 
+import ApiError from '../utils/ApiError.js';
+
 export const registerUser = async (userData) => {
     validRegisterInput(userData);
 
@@ -15,7 +17,7 @@ export const registerUser = async (userData) => {
     const existingUser = await User.findOne({email, });
 
     if(existingUser) {
-        throw new Error('User already exists');
+        throw new Error('User with this email already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,18 +36,18 @@ export const loginUser = async (email, password) => {
     const user = await User.findOne({email});
 
     if(!user){
-        throw new Error('Invalid email or password');
+        throw new ApiError(401, 'Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if(!isPasswordValid){
-        throw new Error('Invalid email or password');
+        throw new ApiError(401, 'Invalid email or password');
     }
 
     const payload = {
         id : user._id,
-        enail : user.email,
+        email : user.email,
     };
 
     const accessToken = generateAccessToken(payload);

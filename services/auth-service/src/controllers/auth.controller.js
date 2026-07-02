@@ -1,8 +1,12 @@
 import { registerUser, loginUser } from "../services/auth.service.js";
 
+import ApiResponse from '../utils/ApiResponse.js';
+
+import asyncHandler from '../utils/asyncHandler.js';
 
 
-export const register = async (req, res) => {
+
+export const register = (async (req, res) => {
     const user = await registerUser(req.body);
 
     res.status(201).json({
@@ -10,16 +14,13 @@ export const register = async (req, res) => {
         message: 'User registered successfully',
         data: user,
     });
-};
+});
 
-export const login = async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
     const {email, password} = req.body;
 
     const result = await loginUser (email, password);
 
-    res.status(200).json({
-        success: true,
-        message: 'User logged in successfully',
-        data: result,
-    });
-};
+    res.status(200)
+    .json(new ApiResponse(200,'User logged in successfully', result));
+});
