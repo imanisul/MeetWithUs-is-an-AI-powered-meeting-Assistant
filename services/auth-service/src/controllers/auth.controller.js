@@ -6,14 +6,10 @@ import asyncHandler from '../utils/asyncHandler.js';
 
 
 
-export const register = (async (req, res) => {
+export const register = asyncHandler(async (req, res) => {
     const user = await registerUser(req.body);
 
-    res.status(201).json({
-        success: true,
-        message: 'User registered successfully',
-        data: user,
-    });
+    res.status(201).json(new ApiResponse(201, 'User registered successfully', user));
 });
 
 export const login = asyncHandler(async (req, res) => {
