@@ -1,8 +1,21 @@
+import {getChannel } from '../config/rabbitmq.js'
+
+
 export const publishMeetingCreated = async (meeting) => {
 
-    console.log('Event Published');
+    const channel = getChannel();
 
-    console.log(meeting.title);
+    const queue = 'meeting-created';
+
+    await channel.assertQueue(queue);
+
+    channel.sendToQueue(
+        queue,
+        Buffer.from(JSON.stringify(meeting))
+    );
+
+    console.log("Meeting Event Published");
+    
     
     
 };
