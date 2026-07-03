@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 
 import Meeting from '../models/Meeting.model.js';
+import {publishMeetingCreated} from '../events/publisher.js';
 
 import {generateMeetingCode} from '../utils/generateMeetingCode.js';
 
@@ -15,6 +16,9 @@ export const createMeeting = async (meetingData, hostId) => {
         hostId,
         meetingLink,
     });
+
+
+    await publishMeetingCreated(meeting)
 
     return meeting;
 }
