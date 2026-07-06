@@ -3,8 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import { authProxy } from './routes/auth.proxy.js';
-import { meetingProxy } from './routes/meeting.proxy.js';
+import proxyRoutes from './routes/proxy.routes.js';
 
 const app = express();
 
@@ -13,8 +12,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
 
-app.use('/api/v1/auth', authProxy);
-app.use('/api/v1/meetings', meetingProxy);
+app.use('/', proxyRoutes);
 
 app.get('/', (req, res) => {
     res.json({

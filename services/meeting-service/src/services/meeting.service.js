@@ -5,6 +5,7 @@ import {publishMeetingCreated} from '../events/publisher.js';
 
 import {generateMeetingCode} from '../utils/generateMeetingCode.js';
 import { cacheMeeting } from './cache.service.js';
+import { generateAgenda } from '../client/ai.client.js';
 
 export const createMeeting = async (meetingData, hostId) => {
     const meetingCode = generateMeetingCode();
@@ -12,11 +13,20 @@ export const createMeeting = async (meetingData, hostId) => {
 
     const meetingLink = `https://meetwithus.com/meeting/${meetingCode}`;
 
+     const agenda = await generateAgenda(
+        meetingData.title,
+        meetingData.description,
+     );
+
     const meeting = await Meeting.create({
         ...meetingData,
         hostId,
+        meetingCode,
         meetingLink,
+        agenda,
     });
+
+   
 
    
 
@@ -29,8 +39,7 @@ export const createMeeting = async (meetingData, hostId) => {
 
 
 export const updateAIContent  = async (meetingId, aiContent) => {
-    return await Meeting.findByIdAndUpdate(
-
+    const updatedMeeting = await Meeting.findByIdAndUpdate(
         meetingId, 
         {
             aiAgenda: aiContent.agenda,
@@ -41,4 +50,7 @@ export const updateAIContent  = async (meetingId, aiContent) => {
             new: true,
         }
     );
+
+    await cacheMeeting(updatedMeeting);
+    return updatedMeeting;
 };

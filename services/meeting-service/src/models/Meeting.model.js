@@ -63,6 +63,11 @@ const meetingSchema = new mongoose.Schema(
             default: '',
         },
 
+        agenda : {
+            type: String,
+            default: '',
+        }
+
 
     }, {timestamps: true});
 

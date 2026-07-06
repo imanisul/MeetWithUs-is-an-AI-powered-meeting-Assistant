@@ -5,7 +5,7 @@ export const createAgenda = async (req, res) => {
         const {title, description} = req.body;
 
         const agenda = await generateAgenda(
-            title, description
+            { title, description }
         );
 
         res.status(200).json({
