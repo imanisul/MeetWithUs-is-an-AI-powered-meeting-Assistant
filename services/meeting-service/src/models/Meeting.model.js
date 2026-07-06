@@ -50,7 +50,18 @@ const meetingSchema = new mongoose.Schema(
             ],
             default: 'Scheduled'
         },
-
+        aiAgenda : {
+            type: String,
+            default: '',
+        },
+        aiDiscussionPoints : {
+            type: String,
+            default: '',
+        },
+        aiActionItems : {
+            type: String,
+            default: '',
+        },
 
 
     }, {timestamps: true});

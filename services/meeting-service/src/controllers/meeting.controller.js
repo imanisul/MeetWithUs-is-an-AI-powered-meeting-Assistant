@@ -10,4 +10,17 @@ export const createMeeting = async (req, res) => {
         success : true,
         data : meeting,
     })
-}
+};
+
+export const updateAI = async (req, res) => {
+    const meeting = await meetingService.updateAIContent(
+        req.params.id,
+        req.body
+    );
+
+    res.json({
+        success : true,
+        meeting,
+    });
+
+};   

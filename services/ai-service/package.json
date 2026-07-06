@@ -1,8 +1,8 @@
 {
-  "name": "meeting-service",
+  "name": "ai-service",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/server.js",
+  "main": "server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
@@ -12,18 +12,18 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "amqplib": "^2.0.1",
-    "cors": "^2.8.6",
-    "crypto": "^1.0.1",
+    "axios": "^1.18.1",
+    "chromadb": "^3.5.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "express-async-errors": "^3.1.1",
     "helmet": "^8.2.0",
-    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.3",
     "morgan": "^1.11.0",
-    "redis": "^6.1.0",
-    "validator": "^13.15.35"
+    "multer": "^2.2.0",
+    "pdf-parse": "^1.1.1",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "eslint": "^10.6.0",

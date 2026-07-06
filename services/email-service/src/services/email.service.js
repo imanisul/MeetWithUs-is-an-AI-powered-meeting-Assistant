@@ -1,6 +1,6 @@
 import { transporter } from '../config/mail.js';
 
-export const sentMeetingInvitation = async (meeting) => {
+export const sendMeetingInvitation = async (meeting) => {
     for(const attendee of meeting.attendees){
         await transporter.sendMail({
             from: process.env.EMAIL_USER,

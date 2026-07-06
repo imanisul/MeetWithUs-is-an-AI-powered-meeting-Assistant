@@ -6,11 +6,17 @@ import { env } from './config/env.js';
 
 import { connectRabbitMQ } from './config/rabbitmq.js';
 
+import {connectRedis} from './config/redis.js';
+
 const startServer = async () => {
     try {
         await connectDB();
 
+        await connectRedis();
+        
         await connectRabbitMQ();
+
+        
 
         app.listen(env.PORT, () => {
             console.log(`Meeting service is runing on port ${env.PORT}`);
