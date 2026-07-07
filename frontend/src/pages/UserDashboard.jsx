@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
-function Dashboard({ token }) {
+function UserDashboard({ token }) {
   const [meetingTitle, setMeetingTitle] = useState('');
   const [description, setDescription] = useState('');
 
   const handleCreateMeeting = async (e) => {
     e.preventDefault();
     if (!token) {
-      alert("Please login first to create a meeting.");
+      toast.error("Please login first to create a meeting.");
       return;
     }
+    const loadingToast = toast.loading('Creating meeting...');
     try {
         const res = await axios.post('http://localhost:8000/meetings', {
             title: meetingTitle,
@@ -21,10 +23,12 @@ function Dashboard({ token }) {
                 Authorization: `Bearer ${token}`
             }
         });
-        alert(`Meeting Created! Code: ${res.data.data.meetingCode}`);
+        toast.success(`Meeting Created! Code: ${res.data.data.meetingCode}`, { id: loadingToast });
+        setMeetingTitle('');
+        setDescription('');
     } catch (err) {
         console.error(err);
-        alert('Failed to create meeting');
+        toast.error('Failed to create meeting', { id: loadingToast });
     }
   };
 
@@ -78,4 +82,4 @@ function Dashboard({ token }) {
   );
 }
 
-export default Dashboard;
+export default UserDashboard;
