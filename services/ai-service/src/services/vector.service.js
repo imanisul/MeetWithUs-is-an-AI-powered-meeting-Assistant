@@ -29,3 +29,12 @@ export const storeChunks = async (
         metadatas,
     });
 };
+
+export const searchChunks = async (queryEmbedding, limit = 3) => {
+    const collection = await getCollection();
+    const results = await collection.query({
+        queryEmbeddings: [queryEmbedding],
+        nResults: limit,
+    });
+    return results;
+};
