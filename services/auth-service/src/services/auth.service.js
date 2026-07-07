@@ -12,7 +12,7 @@ export const registerUser = async (userData) => {
     validRegisterInput(userData);
 
 
-    const {fullName, email, password} = userData;
+    const {fullName, email, password, role} = userData;
 
     const existingUser = await User.findOne({email, });
 
@@ -26,6 +26,7 @@ export const registerUser = async (userData) => {
         fullName,
         email,
         password : hashedPassword,
+        role: role || 'user',
     });
 
     return user;
@@ -48,6 +49,7 @@ export const loginUser = async (email, password) => {
     const payload = {
         id : user._id,
         email : user.email,
+        role: user.role,
     };
 
     const accessToken = generateAccessToken(payload);
@@ -59,6 +61,7 @@ export const loginUser = async (email, password) => {
             id : user._id,
             fullName : user.fullName,
             email : user.email,
+            role: user.role,
         },
         accessToken,
         refreshToken

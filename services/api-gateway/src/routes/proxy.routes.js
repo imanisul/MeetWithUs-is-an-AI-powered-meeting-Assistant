@@ -1,6 +1,6 @@
 import {Router } from 'express';
 import {createProxyMiddleware} from 'http-proxy-middleware';
-import env from '../config/env.js';
+import { env } from '../config/env.js';
 
 const router = Router();
 
@@ -24,7 +24,7 @@ router.use('/meetings',
     })
 );
 
-router.use('/api',
+router.use('/ai',
     createProxyMiddleware({
         target: env.AI_SERVICE,
         changeOrigin: true,

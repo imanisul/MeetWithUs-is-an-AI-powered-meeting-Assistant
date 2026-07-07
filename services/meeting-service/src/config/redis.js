@@ -1,10 +1,11 @@
 import {createClient } from 'redis';
+import { env } from './env.js';
 
 let redisClient;
 
 export const connectRedis = async () => {
     redisClient = createClient({
-        url: 'redis://localhost:6379',
+        url: env.REDIS_URL,
     });
 
     redisClient.on('error', (err) => {

@@ -1,14 +1,13 @@
-export const splitIntoChunks = (
-    text,
-    chuckSize = 500
-) => {
-    const chunks = [];
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-    for(let i =0; i<text.length; i += chunkSize){
-        chunks.push(
-            text.slice(i, i+chuckSize)
-        );
-    }
+
+export const splitIntoChunks = async (text) => {
+    const splitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1000,
+        chunkOverlap: 200,
+    });
+
+    const chunks = await splitter.createDocuments([text]);
 
     return chunks;
-};
+}

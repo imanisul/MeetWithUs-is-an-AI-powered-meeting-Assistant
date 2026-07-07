@@ -1,0 +1,86 @@
+version: "3.9"
+
+services:
+
+  mongodb:
+    image: mongo:8
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: auth-service
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./services/auth-service/.env
+    depends_on:
+      - mongodb
+
+  meeting-service:
+    build:
+      context: ./services/meeting-service
+    container_name: meeting-service
+    ports:
+      - "8003:8003"
+    env_file:
+      - ./services/meeting-service/.env
+    depends_on:
+      - mongodb
+      - redis
+      - rabbitmq
+
+  email-service:
+    build:
+      context: ./services/email-service
+    container_name: email-service
+    ports:
+      - "8004:8004"
+    env_file:
+      - ./services/email-service/.env
+    depends_on:
+      - rabbitmq
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+    container_name: ai-service
+    ports:
+      - "8005:8005"
+    env_file:
+      - ./services/ai-service/.env
+    depends_on:
+      - mongodb
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./services/api-gateway/.env
+    depends_on:
+      - auth-service
+      - meeting-service
+      - ai-service
+
+volumes:
+  mongo_data:

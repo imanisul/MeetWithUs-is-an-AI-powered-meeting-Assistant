@@ -414,14 +414,14 @@ This project is designed to help developers learn:
 - [x] Auth Service Setup
 - [x] User Registration
 - [x] Login API
-- [ ] JWT Authentication Middleware
-- [ ] Meeting Service
-- [ ] Email Service
-- [ ] RabbitMQ Integration
-- [ ] Redis Integration
-- [ ] AI Service
-- [ ] RAG Implementation
-- [ ] Frontend Development
+- [x] JWT Authentication Middleware
+- [x] Meeting Service
+- [x] Email Service
+- [x] RabbitMQ Integration
+- [x] Redis Integration
+- [x] AI Service
+- [x] RAG Implementation
+- [x] Frontend Development
 - [ ] Dockerization
 - [ ] AWS Deployment
 - [ ] CI/CD Pipeline
