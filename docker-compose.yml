@@ -1,86 +1,131 @@
-version: "3.9"
+version: '3.8'
 
 services:
-
   mongodb:
-    image: mongo:8
-    container_name: mongodb
+    image: mongo:latest
+    container_name: meetwithus-mongodb
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    ports:
-      - "6379:6379"
+      - mongodb_data:/data/db
+    networks:
+      - meetwithus-network
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: meetwithus-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
+    networks:
+      - meetwithus-network
 
-  auth-service:
-    build:
-      context: ./services/auth-service
-    container_name: auth-service
+  redis:
+    image: redis:alpine
+    container_name: meetwithus-redis
     ports:
-      - "8002:8002"
-    env_file:
-      - ./services/auth-service/.env
-    depends_on:
-      - mongodb
-
-  meeting-service:
-    build:
-      context: ./services/meeting-service
-    container_name: meeting-service
-    ports:
-      - "8003:8003"
-    env_file:
-      - ./services/meeting-service/.env
-    depends_on:
-      - mongodb
-      - redis
-      - rabbitmq
-
-  email-service:
-    build:
-      context: ./services/email-service
-    container_name: email-service
-    ports:
-      - "8004:8004"
-    env_file:
-      - ./services/email-service/.env
-    depends_on:
-      - rabbitmq
-
-  ai-service:
-    build:
-      context: ./services/ai-service
-    container_name: ai-service
-    ports:
-      - "8005:8005"
-    env_file:
-      - ./services/ai-service/.env
-    depends_on:
-      - mongodb
+      - "6379:6379"
+    networks:
+      - meetwithus-network
 
   api-gateway:
     build:
       context: ./services/api-gateway
-    container_name: api-gateway
+    container_name: meetwithus-api-gateway
     ports:
       - "8000:8000"
-    env_file:
-      - ./services/api-gateway/.env
+    environment:
+      - PORT=8000
+      - AUTH_SERVICE=http://auth-service:8001
+      - MEETING_SERVICE=http://meeting-service:8002
+      - AI_SERVICE=http://ai-service:8003
     depends_on:
       - auth-service
       - meeting-service
       - ai-service
+    networks:
+      - meetwithus-network
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: meetwithus-auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - MONGO_URI=mongodb://mongodb:27017/meetwithus
+      - JWT_SECRET=supersecretjwtkey
+      - RABBITMQ_URL=amqp://rabbitmq
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - meetwithus-network
+
+  meeting-service:
+    build:
+      context: ./services/meeting-service
+    container_name: meetwithus-meeting-service
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - MONGO_URI=mongodb://mongodb:27017/meetwithus
+      - RABBITMQ_URL=amqp://rabbitmq
+      - AI_SERVICE_URL=http://ai-service:8003
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongodb
+      - rabbitmq
+      - redis
+    networks:
+      - meetwithus-network
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+    container_name: meetwithus-ai-service
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - GEMINI_API_KEY=${GEMINI_API_KEY} # Needs to be passed from host .env
+    networks:
+      - meetwithus-network
+
+  email-service:
+    build:
+      context: ./services/email-service
+    container_name: meetwithus-email-service
+    ports:
+      - "8004:8004"
+    environment:
+      - PORT=8004
+      - RABBITMQ_URL=amqp://rabbitmq
+      - EMAIL_USER=test@meetwithus.com
+      - EMAIL_PASS=testpass
+    depends_on:
+      - rabbitmq
+    networks:
+      - meetwithus-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: meetwithus-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - api-gateway
+    networks:
+      - meetwithus-network
+
+networks:
+  meetwithus-network:
+    driver: bridge
 
 volumes:
-  mongo_data:
+  mongodb_data:

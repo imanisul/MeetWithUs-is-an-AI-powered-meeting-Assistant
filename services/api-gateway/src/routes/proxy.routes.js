@@ -38,4 +38,15 @@ router.use(
     })
 );
 
+router.use(
+    '/documents',
+    createProxyMiddleware({
+        target: env.AI_SERVICE, // Documents are handled in ai-service
+        changeOrigin: true,
+        pathRewrite: (path, req) => {
+            return req.originalUrl.replace(/^\/documents/, '/api/v1/documents');
+        }
+    })
+);
+
 export default router;

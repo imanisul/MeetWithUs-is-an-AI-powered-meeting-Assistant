@@ -44,7 +44,9 @@ export const updateAIContent  = async (meetingId, aiContent) => {
         {
             aiAgenda: aiContent.agenda,
             aiDiscussionPoints: aiContent.discussionPoints,
-            aiActionItems : aiContent.actionItems,
+            aiActionItems: aiContent.actionItems,
+            aiSummary: aiContent.summary,
+            notes: aiContent.notes,
         }, 
         {
             new: true,

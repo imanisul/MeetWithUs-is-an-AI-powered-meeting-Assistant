@@ -58,6 +58,14 @@ const meetingSchema = new mongoose.Schema(
             type: String,
             default: '',
         },
+        notes : {
+            type: String,
+            default: '',
+        },
+        aiSummary : {
+            type: String,
+            default: '',
+        },
         aiActionItems : {
             type: String,
             default: '',

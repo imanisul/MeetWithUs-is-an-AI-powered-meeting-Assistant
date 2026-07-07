@@ -1,65 +1,47 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { jwtDecode } from 'jwt-decode';
-import UserDashboard from './pages/UserDashboard';
-import AdminDashboard from './pages/AdminDashboard';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthLayout } from './components/layout/AuthLayout';
+import { DashboardLayout } from './components/layout/DashboardLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import { Overview } from './pages/Dashboard/Overview';
+import { MeetingList } from './pages/Meetings/MeetingList';
+import { MeetingDetails } from './pages/Meetings/MeetingDetails';
+import { AIAssistant } from './pages/AI/AIAssistant';
+import { DocumentManager } from './pages/Documents/DocumentManager';
+import { CalendarView } from './pages/Calendar/CalendarView';
+import { OrganizationSettings } from './pages/Organization/OrganizationSettings';
+import { ProfileSettings } from './pages/Settings/ProfileSettings';
+import './index.css';
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setRole(decoded.role || 'user');
-      } catch (err) {
-        setToken(null);
-        setRole(null);
-        localStorage.removeItem('token');
-      }
-    } else {
-      setRole(null);
-    }
-  }, [token]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setRole(null);
-  };
-
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" />
-      <div className="min-h-screen">
-        <nav className="navbar glass mb-4">
-          <Link to="/" className="navbar-brand" style={{ textDecoration: 'none' }}>MeetWithUs 🚀</Link>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            {role === 'admin' && <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Admin View</span>}
-            {token ? (
-              <button onClick={handleLogout} className="btn" style={{ border: '1px solid var(--border-color)', color: 'white', background: 'transparent' }}>Logout</button>
-            ) : (
-              <Link to="/login" className="btn btn-primary" style={{ textDecoration: 'none' }}>Sign In</Link>
-            )}
-          </div>
-        </nav>
-        
-        <main className="container animate-fade-in">
-          <Routes>
-            <Route path="/" element={
-              !token ? <Navigate to="/login" /> : 
-              role === 'admin' ? <AdminDashboard token={token} /> : <UserDashboard token={token} />
-            } />
-            <Route path="/login" element={<Login setToken={setToken} />} />
-            <Route path="/register" element={<Register setToken={setToken} />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+    <Router>
+      <Routes>
+        {/* Auth Routes */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
+
+          {/* Dashboard Routes (Protected) */}
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<Overview />} />
+          <Route path="meetings" element={<MeetingList />} />
+          <Route path="meetings/:id" element={<MeetingDetails />} />
+          <Route path="calendar" element={<CalendarView />} />
+          <Route path="documents" element={<DocumentManager />} />
+          <Route path="ai" element={<AIAssistant />} />
+          <Route path="analytics" element={<div className="p-4">Analytics Coming Soon</div>} />
+          <Route path="organization" element={<OrganizationSettings />} />
+          <Route path="settings" element={<OrganizationSettings />} />
+          <Route path="profile" element={<ProfileSettings />} />
+        </Route>
+
+        {/* Redirects */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </Router>
   );
 }
 

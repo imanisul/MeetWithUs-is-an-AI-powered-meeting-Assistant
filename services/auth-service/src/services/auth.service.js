@@ -1,18 +1,14 @@
 import bcrypt from 'bcrypt';
-
 import User from '../models/user.model.js';
-
+import Organization from '../models/Organization.model.js';
 import {validRegisterInput} from '../validators/auth.validator.js';
-
 import {generateAccessToken, generateRefreshToken} from '../utils/jwt.js';
-
 import ApiError from '../utils/ApiError.js';
 
 export const registerUser = async (userData) => {
     validRegisterInput(userData);
 
-
-    const {fullName, email, password, role} = userData;
+    const {fullName, email, password} = userData;
 
     const existingUser = await User.findOne({email, });
 
@@ -22,12 +18,24 @@ export const registerUser = async (userData) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create the user first without orgId
     const user = await User.create({
         fullName,
         email,
-        password : hashedPassword,
-        role: role || 'user',
+        password: hashedPassword,
+        role: 'ORG_ADMIN',
     });
+
+    // Auto-create a personal workspace
+    const org = await Organization.create({
+        name: `${fullName.split(' ')[0]}'s Workspace`,
+        ownerId: user._id,
+        members: [{ userId: user._id, role: 'ORG_ADMIN' }]
+    });
+
+    // Assign the org to the user
+    user.organizationId = org._id;
+    await user.save();
 
     return user;
 };
@@ -50,11 +58,11 @@ export const loginUser = async (email, password) => {
         id : user._id,
         email : user.email,
         role: user.role,
+        organizationId: user.organizationId
     };
 
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
-
 
     return {
         user: {
@@ -62,6 +70,7 @@ export const loginUser = async (email, password) => {
             fullName : user.fullName,
             email : user.email,
             role: user.role,
+            organizationId: user.organizationId
         },
         accessToken,
         refreshToken
