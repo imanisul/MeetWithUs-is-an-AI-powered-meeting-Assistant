@@ -12,7 +12,7 @@ function Login({ setToken }) {
     e.preventDefault();
     const loadingToast = toast.loading('Signing in...');
     try {
-      const res = await axios.post('http://localhost:8000/auth/login', {
+      const res = await axios.post('http://127.0.0.1:8000/auth/login', {
         email,
         password,
       });
