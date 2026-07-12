@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import axios from "axios"
+import api from "@/services/api"
 import toast from "react-hot-toast"
+import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function AIAssistant() {
   const [messages, setMessages] = useState([
@@ -25,7 +26,7 @@ export function AIAssistant() {
     setIsLoading(true)
 
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/ai/search`, {
+      const res = await api.get(`/ai/search`, {
         params: { query: userMessage }
       })
       
@@ -44,7 +45,7 @@ export function AIAssistant() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <AnimatedPage className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="mb-4">
         <h1 className="text-3xl font-bold tracking-tight">AI Assistant</h1>
         <p className="text-muted-foreground">
@@ -134,6 +135,6 @@ export function AIAssistant() {
           </form>
         </div>
       </Card>
-    </div>
+    </AnimatedPage>
   )
 }

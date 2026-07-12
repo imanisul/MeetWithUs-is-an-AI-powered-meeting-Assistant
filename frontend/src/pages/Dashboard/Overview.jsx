@@ -2,7 +2,9 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, Users, Bot, CheckCircle2, TrendingUp, Sparkles, ArrowUpRight } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import axios from "axios"
+import api from "@/services/api"
+import { jwtDecode } from "jwt-decode"
+import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function Overview() {
   const [stats, setStats] = useState({
@@ -20,14 +22,21 @@ export function Overview() {
     ]
   })
 
+  const [role, setRole] = useState("GUEST");
+  const isOrgAdmin = role === "SUPER_ADMIN" || role === "ORG_ADMIN";
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://127.0.0.1:8000/meetings/analytics", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setStats(res.data.data);
+        if (token) {
+          const decoded = jwtDecode(token);
+          setRole(decoded.role || "GUEST");
+        }
+        const res = await api.get(`/meetings/analytics`);
+        if (res.data && res.data.data) {
+          setStats(res.data.data);
+        }
       } catch (error) {
         console.error("Failed to load analytics", error);
       }
@@ -75,8 +84,9 @@ export function Overview() {
   ]
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-10">
-      {/* Page Header */}
+    <AnimatedPage>
+      <div className="space-y-8 max-w-7xl mx-auto pb-10">
+        {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
         <p className="text-slate-400">
@@ -84,7 +94,6 @@ export function Overview() {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card, i) => (
           <Card key={i} className="relative overflow-hidden border-white/5 bg-white/[0.03] backdrop-blur-sm hover:bg-white/[0.06] transition-all duration-300 group">
@@ -103,6 +112,47 @@ export function Overview() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="border-white/5 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20 transition-all cursor-pointer" onClick={() => window.location.href = '/dashboard/meetings'}>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <Users className="h-6 w-6 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Manage Meetings</h3>
+              <p className="text-sm text-slate-400">View schedule and create new meetings</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-white/5 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 transition-all cursor-pointer" onClick={() => window.location.href = '/dashboard/documents'}>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <Bot className="h-6 w-6 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">AI Knowledge Base</h3>
+              <p className="text-sm text-slate-400">Upload documents for AI to learn from</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {isOrgAdmin && (
+          <Card className="border-white/5 bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-all cursor-pointer" onClick={() => window.location.href = '/dashboard/organization'}>
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <Sparkles className="h-6 w-6 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Workspace Members</h3>
+                <p className="text-sm text-slate-400">Invite team members and manage roles</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Charts Row */}
@@ -154,7 +204,8 @@ export function Overview() {
           </CardContent>
         </Card>
 
-        {/* System Status */}
+        {/* System Status (Admin Only) */}
+        {(role === "SUPER_ADMIN" || role === "ORG_ADMIN") && (
         <Card className="col-span-3 border-white/5 bg-white/[0.03] backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white text-lg">System Status</CardTitle>
@@ -190,7 +241,9 @@ export function Overview() {
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
-    </div>
+      </div>
+    </AnimatedPage>
   )
 }

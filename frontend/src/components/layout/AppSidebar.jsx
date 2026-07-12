@@ -15,6 +15,7 @@ import { Home, Calendar, Users, FileText, Bot, BarChart2, Settings, Building, Sp
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { jwtDecode } from "jwt-decode"
+import { MeetingCreateDialog } from "@/components/meetings/MeetingCreateDialog"
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home, roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'MEMBER', 'GUEST'] },
@@ -29,8 +30,7 @@ const aiItems = [
 ]
 
 const adminItems = [
-  { title: "Organization", url: "/dashboard/organization", icon: Building, roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
-  { title: "Settings", url: "/dashboard/settings", icon: Settings, roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
+  { title: "Workspace", url: "/dashboard/organization", icon: Building, roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
 ]
 
 export function AppSidebar() {
@@ -65,7 +65,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-5 pb-4">
-        <div className="flex items-center gap-3">
+        <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity mb-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
             <Sparkles className="h-5 w-5" />
           </div>
@@ -73,6 +73,9 @@ export function AppSidebar() {
             <span className="text-base font-bold tracking-tight text-white">MeetWithUs</span>
             <p className="text-[10px] font-medium text-blue-400 tracking-widest uppercase">AI Platform</p>
           </div>
+        </Link>
+        <div className="px-1">
+          <MeetingCreateDialog className="w-full" />
         </div>
       </SidebarHeader>
 

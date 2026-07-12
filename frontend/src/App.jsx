@@ -11,7 +11,21 @@ import { DocumentManager } from './pages/Documents/DocumentManager';
 import { CalendarView } from './pages/Calendar/CalendarView';
 import { OrganizationSettings } from './pages/Organization/OrganizationSettings';
 import { ProfileSettings } from './pages/Settings/ProfileSettings';
+import { Analytics } from './pages/Dashboard/Analytics';
+import axios from 'axios';
 import './index.css';
+
+// Global Axios Interceptor for 401 Unauthorized
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 function App() {
   return (
@@ -31,9 +45,9 @@ function App() {
           <Route path="calendar" element={<CalendarView />} />
           <Route path="documents" element={<DocumentManager />} />
           <Route path="ai" element={<AIAssistant />} />
-          <Route path="analytics" element={<div className="p-4">Analytics Coming Soon</div>} />
+          <Route path="analytics" element={<Analytics />} />
           <Route path="organization" element={<OrganizationSettings />} />
-          <Route path="settings" element={<OrganizationSettings />} />
+          <Route path="settings" element={<ProfileSettings />} />
           <Route path="profile" element={<ProfileSettings />} />
         </Route>
 

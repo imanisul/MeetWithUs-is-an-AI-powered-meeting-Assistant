@@ -49,4 +49,15 @@ router.use(
     })
 );
 
+router.use(
+    '/notifications',
+    createProxyMiddleware({
+        target: env.AUTH_SERVICE,
+        changeOrigin: true,
+        pathRewrite: (path, req) => {
+            return req.originalUrl.replace(/^\/notifications/, '/api/v1/notifications');
+        }
+    })
+);
+
 export default router;

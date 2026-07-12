@@ -20,8 +20,9 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { jwtDecode } from "jwt-decode"
-import axios from "axios"
+import api from "@/services/api"
 import toast from "react-hot-toast"
+import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function OrganizationSettings() {
   const [org, setOrg] = useState(null)
@@ -29,6 +30,8 @@ export function OrganizationSettings() {
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState("MEMBER")
   const [isInviting, setIsInviting] = useState(false)
+  
+  const [allUsers, setAllUsers] = useState([])
   
   const token = localStorage.getItem("token")
   let currentUserRole = "GUEST"
@@ -43,14 +46,25 @@ export function OrganizationSettings() {
 
   useEffect(() => {
     fetchOrg()
+    fetchAllUsers()
   }, [])
+
+  const fetchAllUsers = async () => {
+    try {
+      const res = await api.get(`/auth/users`)
+      setAllUsers(res.data.data)
+    } catch (error) {
+      console.error("Failed to fetch all users")
+    }
+  }
 
   const fetchOrg = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/auth/organization", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setOrg(res.data.data)
+      const res = await api.get(`/auth/me`)
+      setOrg(res.data.data.organization)
+      if (res.data.data.organization) {
+        setOrg(res.data.data.organization)
+      }
     } catch (error) {
       toast.error("Failed to load organization details")
     } finally {
@@ -65,9 +79,7 @@ export function OrganizationSettings() {
     setIsInviting(true)
     const toastId = toast.loading("Inviting member...")
     try {
-      await axios.post("http://127.0.0.1:8000/auth/organization/invite", { email: inviteEmail, role: inviteRole }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await api.post(`/auth/organization/invite`, { email: inviteEmail, role: inviteRole })
       toast.success("Member added to organization!", { id: toastId })
       setInviteEmail("")
       fetchOrg() // refresh list
@@ -81,9 +93,7 @@ export function OrganizationSettings() {
   const handleRoleChange = async (memberId, newRole) => {
     const toastId = toast.loading("Updating role...")
     try {
-      await axios.put("http://127.0.0.1:8000/auth/organization/role", { memberId, role: newRole }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await api.put(`/auth/organization/role`, { memberId, role: newRole })
       toast.success("Role updated!", { id: toastId })
       fetchOrg()
     } catch (error) {
@@ -108,7 +118,7 @@ export function OrganizationSettings() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
+    <AnimatedPage className="space-y-6 max-w-6xl mx-auto pb-10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -138,12 +148,18 @@ export function OrganizationSettings() {
                 <form onSubmit={handleInvite} className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Email address</label>
-                    <Input 
-                      placeholder="colleague@company.com" 
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      required
-                    />
+                    <Select value={inviteEmail} onValueChange={setInviteEmail}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a user to invite" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allUsers.filter(u => !org.members.find(m => m.userId && m.userId.email === u.email)).map(user => (
+                          <SelectItem key={user._id} value={user.email}>
+                            {user.fullName} ({user.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Role</label>
@@ -229,7 +245,9 @@ export function OrganizationSettings() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {org.members.map((member) => (
+                  {org.members.map((member) => {
+                    if (!member.userId) return null;
+                    return (
                     <TableRow key={member.userId._id || member.userId}>
                       <TableCell>
                         <div className="font-medium">{member.userId.fullName}</div>
@@ -260,13 +278,14 @@ export function OrganizationSettings() {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
+    </AnimatedPage>
   )
 }

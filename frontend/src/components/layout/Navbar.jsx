@@ -14,18 +14,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Link, useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { jwtDecode } from "jwt-decode"
 
-const MOCK_NOTIFICATIONS = [
-  { id: 1, title: "AI Summary Ready", description: "The AI summary for 'Quarterly Planning Sync' is ready to review.", time: "2m ago", read: false },
-  { id: 2, title: "New Document Indexed", description: "Q3_Marketing_Strategy.pdf has been added to the RAG knowledge base.", time: "1h ago", read: false },
-  { id: 3, title: "Action Item Assigned", description: "Sarah assigned you an action item: 'Prepare sales forecast'.", time: "3h ago", read: true },
-]
+import axios from "axios"
+import toast from "react-hot-toast"
+import { useDispatch } from "react-redux"
+import { logout as logoutAction } from "@/store/slices/authSlice"
 
 export function Navbar() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
 
   // Decode user info from JWT
   let userName = "User";
@@ -43,21 +42,56 @@ export function Navbar() {
     }
   } catch (e) {}
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/notifications`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        // map backend structure to frontend structure
+        const mapped = res.data.data.map(n => ({
+          id: n._id,
+          title: n.title,
+          description: n.description,
+          time: new Date(n.createdAt).toLocaleDateString(), // simplified time
+          read: n.read
+        }));
+        setNotifications(mapped);
+      } catch (err) {
+        console.error("Failed to fetch notifications");
+      }
+    };
+    fetchNotifications();
+    // optionally set an interval to poll
+    const interval = setInterval(fetchNotifications, 30000); // every 30s
+    return () => clearInterval(interval);
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const dispatch = useDispatch();
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    dispatch(logoutAction());
     navigate("/login");
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/notifications/mark-all-read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      toast.error("Failed to mark notifications as read");
+    }
   };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-white/5 bg-background/80 backdrop-blur-xl px-4 shadow-sm">
       <div className="flex flex-1 items-center gap-4">
-        <SidebarTrigger className="text-slate-400 hover:text-white transition-colors" />
+        <SidebarTrigger className="text-slate-400 hover:text-white transition-colors md:hidden" />
         
         {/* Search Bar */}
         <div className="w-full max-w-lg hidden md:flex items-center relative group">
@@ -157,7 +191,7 @@ export function Navbar() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="text-slate-300 focus:text-white focus:bg-white/5 cursor-pointer">
-                <Link to="/dashboard/settings" className="flex w-full items-center py-2">
+                <Link to="/dashboard/organization" className="flex w-full items-center py-2">
                   <Settings className="mr-3 h-4 w-4 text-slate-500" /> Workspace Settings
                 </Link>
               </DropdownMenuItem>

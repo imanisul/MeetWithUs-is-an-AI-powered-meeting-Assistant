@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
-import { User, Mail, Shield, Save, Camera, Key, Bell, Palette } from "lucide-react"
+import { User, Mail, Shield, Save, Camera, Key, Bell } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { jwtDecode } from "jwt-decode"
 import toast from "react-hot-toast"
+import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function ProfileSettings() {
   const [profile, setProfile] = useState({
@@ -51,7 +52,7 @@ export function ProfileSettings() {
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-10">
+    <AnimatedPage className="space-y-8 max-w-4xl mx-auto pb-10">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-white">Profile Settings</h1>
         <p className="text-slate-400 mt-1">
@@ -224,6 +225,6 @@ export function ProfileSettings() {
           </Card>
         </div>
       </div>
-    </div>
+    </AnimatedPage>
   )
 }

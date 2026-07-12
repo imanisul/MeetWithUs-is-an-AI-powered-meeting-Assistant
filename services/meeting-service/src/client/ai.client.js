@@ -3,7 +3,7 @@ import {env } from '../config/env.js';
 
 export const generateAgenda = async (title, description) => {
     const response = await axios.post(
-        `${env.AI_SERVICE_URL}/api/v1/generate-agenda`,
+        `${env.AI_SERVICE_URL}/api/v1/ai/generate-agenda`,
         {
             title,
             description,

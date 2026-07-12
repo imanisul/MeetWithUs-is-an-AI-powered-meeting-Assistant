@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const mockEvents = [
@@ -78,7 +79,7 @@ export function CalendarView() {
   }
 
   return (
-    <div className="space-y-6">
+    <AnimatedPage className="space-y-6 max-w-6xl mx-auto pb-10">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
@@ -123,6 +124,6 @@ export function CalendarView() {
           {renderCells()}
         </div>
       </Card>
-    </div>
+    </AnimatedPage>
   )
 }

@@ -22,5 +22,23 @@ export const updateAI = async (req, res) => {
         success : true,
         meeting,
     });
+};
 
-};   
+export const getMeetings = async (req, res) => {
+    try {
+        const meetings = await meetingService.getMeetings(req.user);
+        res.json({ success: true, data: meetings });
+    } catch (error) {
+        console.error("Error in getMeetings:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getMeetingById = async (req, res) => {
+    try {
+        const meeting = await meetingService.getMeetingById(req.params.id, req.user.id, req.user.role);
+        res.json({ success: true, data: meeting });
+    } catch (error) {
+        res.status(404).json({ success: false, message: error.message });
+    }
+};

@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import axios from "axios"
+import api from "@/services/api"
 import toast from "react-hot-toast"
+import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function MeetingDetails() {
   const { id } = useParams();
@@ -15,24 +16,48 @@ export function MeetingDetails() {
   
   // Using mock state for the demo if ID isn't provided or API isn't ready
   const [meeting, setMeeting] = useState({
-    title: "Quarterly Planning Sync",
-    date: new Date().toLocaleDateString(),
-    time: "10:00 AM - 11:30 AM",
-    attendees: 5,
-    status: "Completed",
-    notes: "Discussed Q3 goals. Marketing will launch campaign by Aug 1. Engineering needs to fix the checkout bug before the launch. Sarah will lead the marketing team sync next week. Budget approved for new hires in sales.",
+    title: "Loading...",
+    date: "",
+    time: "",
+    attendees: [],
+    status: "",
+    notes: "",
     aiSummary: "",
-    aiActionItems: ""
+    aiActionItems: "",
+    meetingLink: ""
   });
 
-  const [notes, setNotes] = useState(meeting.notes);
+  const [notes, setNotes] = useState("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isGeneratingActionItems, setIsGeneratingActionItems] = useState(false);
 
-  // In a real app, you would fetch meeting by ID here
   useEffect(() => {
-    // If we had a real endpoint:
-    // axios.get(\`/meetings/\${id}\`).then(res => { setMeeting(res.data); setNotes(res.data.notes); })
+    const fetchMeeting = async () => {
+      try {
+        const res = await api.get(`/meetings/${id}`);
+        const m = res.data.data;
+        if (!m) {
+          toast.error("Meeting not found");
+          return;
+        }
+        setMeeting({
+          title: m.title || "Untitled Meeting",
+          date: m.startTime ? new Date(m.startTime).toLocaleDateString() : "No Date",
+          time: m.startTime ? new Date(m.startTime).toLocaleTimeString() : "No Time",
+          attendees: m.attendees || [],
+          status: m.status || "Scheduled",
+          notes: m.notes || "",
+          aiSummary: m.aiSummary || "",
+          aiActionItems: m.aiActionItems || "",
+          meetingLink: m.meetingLink || "",
+          agenda: m.agenda || ""
+        });
+        setNotes(m.notes || "");
+      } catch (error) {
+        toast.error("Failed to load meeting details");
+      }
+    };
+    if (id) fetchMeeting();
   }, [id]);
 
   const handleGenerateSummary = async () => {
@@ -41,7 +66,7 @@ export function MeetingDetails() {
     setIsGeneratingSummary(true);
     const toastId = toast.loading("Generating AI Summary...");
     try {
-      const res = await axios.post("http://127.0.0.1:8000/ai/generate-summary", { notes });
+      const res = await api.post(`/ai/generate-summary`, { notes });
       setMeeting(prev => ({ ...prev, aiSummary: res.data.data }));
       toast.success("Summary generated!", { id: toastId });
     } catch (error) {
@@ -58,7 +83,7 @@ export function MeetingDetails() {
     setIsGeneratingActionItems(true);
     const toastId = toast.loading("Extracting Action Items...");
     try {
-      const res = await axios.post("http://127.0.0.1:8000/ai/generate-action-items", { notes });
+      const res = await api.post(`/ai/generate-action-items`, { notes });
       setMeeting(prev => ({ ...prev, aiActionItems: res.data.data }));
       toast.success("Action items extracted!", { id: toastId });
     } catch (error) {
@@ -72,8 +97,11 @@ export function MeetingDetails() {
   const handleSave = async () => {
     const toastId = toast.loading("Saving changes...");
     try {
-      // In a real app, PUT to /meetings/:id/ai
-      // await axios.put(\`http://127.0.0.1:8000/meetings/\${id}/ai\`, { notes, summary: meeting.aiSummary, actionItems: meeting.aiActionItems })
+      await api.put(`/meetings/${id}/ai`, { 
+        notes, 
+        summary: meeting.aiSummary, 
+        actionItems: meeting.aiActionItems 
+      });
       toast.success("Meeting updated successfully", { id: toastId });
     } catch (error) {
       toast.error("Failed to save changes", { id: toastId });
@@ -81,10 +109,11 @@ export function MeetingDetails() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4" />
+    <AnimatedPage>
+      <div className="space-y-6 max-w-5xl mx-auto pb-10">
+        <div className="flex items-center gap-4">
+        <Button variant="ghost" className="gap-2 text-slate-400 hover:text-white" onClick={() => navigate("/dashboard/meetings")}>
+          <ArrowLeft className="h-4 w-4" /> Back to Meetings
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -94,7 +123,7 @@ export function MeetingDetails() {
           <div className="flex items-center gap-6 mt-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5"><CalendarIcon className="h-4 w-4" /> {meeting.date}</span>
             <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {meeting.time}</span>
-            <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {meeting.attendees} Attendees</span>
+            <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {meeting.attendees?.length || 0} Attendees</span>
           </div>
         </div>
         <Button onClick={handleSave} className="gap-2">
@@ -121,6 +150,28 @@ export function MeetingDetails() {
 
         {/* Right Column: AI Generations */}
         <div className="space-y-6">
+          <Card className="shadow-md border-border/50 bg-card/95 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="bg-purple-500/5 border-b border-purple-500/10 flex flex-row items-center justify-between py-4">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-purple-500">
+                  <Bot className="h-5 w-5" /> AI Generated Agenda
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {meeting.agenda ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap leading-relaxed text-muted-foreground">
+                  {meeting.agenda}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-32 text-muted-foreground/50 text-sm">
+                  <Bot className="h-8 w-8 mb-2 opacity-50" />
+                  <p>No agenda was generated for this meeting.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="shadow-md border-border/50 bg-card/95 backdrop-blur-sm overflow-hidden">
             <CardHeader className="bg-primary/5 border-b border-primary/10 flex flex-row items-center justify-between py-4">
               <div className="space-y-1">
@@ -172,6 +223,7 @@ export function MeetingDetails() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </AnimatedPage>
   )
 }

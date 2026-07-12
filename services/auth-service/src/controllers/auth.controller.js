@@ -20,3 +20,9 @@ export const login = asyncHandler(async (req, res) => {
     res.status(200)
     .json(new ApiResponse(200,'User logged in successfully', result));
 });
+import User from '../models/user.model.js';
+
+export const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({}, 'fullName email role organizationId');
+    res.status(200).json(new ApiResponse(200, 'Users fetched successfully', users));
+});

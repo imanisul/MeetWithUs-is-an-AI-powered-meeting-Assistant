@@ -18,6 +18,8 @@ import authRoutes from './routes/auth.routes.js';
 
 import userRoutes from './routes/user.routes.js';
 
+import notificationRoutes from './routes/notification.routes.js';
+
 const app = express();
 
 app.use(cors());
@@ -34,6 +36,7 @@ app.use('/api/v1/auth', authRoutes);
 
 app.use('/api/v1/users', userRoutes);
 
+app.use('/api/v1/notifications', notificationRoutes);
 
 app.use(notFoundMiddleware);
 

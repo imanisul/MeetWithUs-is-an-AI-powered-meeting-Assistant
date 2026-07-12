@@ -1,5 +1,6 @@
 import Organization from '../models/Organization.model.js';
 import User from '../models/user.model.js';
+import Notification from '../models/Notification.model.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -51,6 +52,15 @@ export const inviteMember = asyncHandler(async (req, res) => {
         email: user.email,
         orgName: org.name,
         role: user.role
+    });
+
+    // Create Notification
+    await Notification.create({
+        userId: user._id,
+        title: "Workspace Invitation",
+        description: `You have been invited to join ${org.name} as a ${role}.`,
+        type: 'ORG_INVITE',
+        relatedEntityId: org._id.toString()
     });
 
     res.status(200).json(new ApiResponse(200, 'Member invited successfully', { user, org }));

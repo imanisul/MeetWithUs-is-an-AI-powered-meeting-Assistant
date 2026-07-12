@@ -8,7 +8,7 @@ export const env = {
     NODE_ENV : process.env.NODE_ENV || 'development',
     MONGO_URI : process.env.MONGO_URI,
     JWT_SECRET: process.env.JWT_SECRET,
-    AI_SERVICE_URL: process.env.AI_SERVICE_URL,
+    AI_SERVICE_URL: process.env.AI_SERVICE_URL || 'http://localhost:8003',
     RABBITMQ_URL: process.env.RABBITMQ_URL || 'amqp://localhost',
     REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
 }

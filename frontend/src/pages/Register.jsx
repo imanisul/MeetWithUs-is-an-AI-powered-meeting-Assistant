@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { useDispatch } from "react-redux"
+import { loginSuccess } from "@/store/slices/authSlice"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import axios from "axios"
+import api from "@/services/api"
 import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +27,7 @@ const formSchema = z.object({
 
 const Register = () => {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -42,13 +45,13 @@ const Register = () => {
     const toastId = toast.loading("Creating account...")
     
     try {
-      await axios.post("http://127.0.0.1:8000/auth/register", values)
+      await api.post(`/auth/register`, values)
       // Auto-login after successful registration
-      const loginRes = await axios.post("http://127.0.0.1:8000/auth/login", {
+      const loginRes = await api.post(`/auth/login`, {
         email: values.email,
         password: values.password
       })
-      localStorage.setItem("token", loginRes.data.data.accessToken)
+      dispatch(loginSuccess({ token: loginRes.data.data.accessToken, user: null }))
       toast.success("Account created successfully!", { id: toastId })
       navigate("/dashboard")
     } catch (err) {

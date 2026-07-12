@@ -69,9 +69,13 @@ services:
     container_name: meetwithus-meeting-service
     ports:
       - "8002:8002"
+    volumes:
+      - ./services/meeting-service:/app
+      - /app/node_modules
     environment:
       - PORT=8002
       - MONGO_URI=mongodb://mongodb:27017/meetwithus
+      - JWT_SECRET=supersecretjwtkey
       - RABBITMQ_URL=amqp://rabbitmq
       - AI_SERVICE_URL=http://ai-service:8003
       - REDIS_URL=redis://redis:6379
@@ -90,7 +94,7 @@ services:
       - "8003:8003"
     environment:
       - PORT=8003
-      - GEMINI_API_KEY=${GEMINI_API_KEY} # Needs to be passed from host .env
+      - MONGO_URI=mongodb://mongodb:27017/meetwithus
     networks:
       - meetwithus-network
 
@@ -116,6 +120,9 @@ services:
     container_name: meetwithus-frontend
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000
     depends_on:

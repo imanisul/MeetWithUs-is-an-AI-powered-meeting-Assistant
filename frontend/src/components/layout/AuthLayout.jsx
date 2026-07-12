@@ -18,14 +18,11 @@ export function AuthLayout() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[120px]" />
       </div>
 
-      <motion.div 
+      <div 
         className="relative z-10 w-full min-h-screen"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
       >
         <Outlet />
-      </motion.div>
+      </div>
       <Toaster position="top-right" />
     </div>
   )

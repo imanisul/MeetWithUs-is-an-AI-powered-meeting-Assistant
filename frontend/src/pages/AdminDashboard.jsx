@@ -16,7 +16,7 @@ function AdminDashboard({ token }) {
     
     try {
       // Calls the API Gateway which proxies to ai-service
-      const res = await axios.get(`http://127.0.0.1:8000/ai/search?q=${encodeURIComponent(query)}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/ai/search?q=${encodeURIComponent(query)}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

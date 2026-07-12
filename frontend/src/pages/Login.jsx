@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { useDispatch } from "react-redux"
+import { loginSuccess } from "@/store/slices/authSlice"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import axios from "axios"
+import api from "@/services/api"
 import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,6 +26,7 @@ const formSchema = z.object({
 
 const Login = () => {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -40,8 +43,8 @@ const Login = () => {
     const toastId = toast.loading("Signing in...")
     
     try {
-      const res = await axios.post("http://127.0.0.1:8000/auth/login", values)
-      localStorage.setItem("token", res.data.data.accessToken)
+      const res = await api.post(`/auth/login`, values)
+      dispatch(loginSuccess({ token: res.data.data.accessToken, user: null }))
       toast.success("Login successful!", { id: toastId })
       navigate("/dashboard")
     } catch (err) {

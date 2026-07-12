@@ -10,43 +10,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useEffect, useState } from "react"
-import axios from "axios"
+import api from "@/services/api"
 import toast from "react-hot-toast"
+import { MeetingCreateDialog } from "@/components/meetings/MeetingCreateDialog"
+import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function MeetingList() {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchMeetings = async () => {
+    try {
+      const res = await api.get(`/meetings`);
+      setMeetings(res.data.data);
+    } catch (err) {
+      toast.error("Failed to load meetings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMeetings = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://127.0.0.1:8000/meetings", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setMeetings(res.data.data);
-      } catch (err) {
-        toast.error("Failed to load meetings");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchMeetings();
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <AnimatedPage>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Meetings</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Meetings</h1>
+          <p className="text-slate-400">
             Manage your organization's meetings.
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> New Meeting
-        </Button>
+        <MeetingCreateDialog onMeetingCreated={fetchMeetings} />
       </div>
 
       <Card>
@@ -77,7 +75,7 @@ export function MeetingList() {
                 meetings.map((meeting) => (
                   <TableRow key={meeting._id}>
                     <TableCell className="font-medium">{meeting.title}</TableCell>
-                    <TableCell>{new Date(meeting.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(meeting.startTime).toLocaleDateString()}</TableCell>
                     <TableCell>{meeting.attendees?.length || 0} participants</TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => window.location.href = `/dashboard/meetings/${meeting._id}`}>View</Button>
@@ -90,5 +88,6 @@ export function MeetingList() {
         </CardContent>
       </Card>
     </div>
+    </AnimatedPage>
   )
 }

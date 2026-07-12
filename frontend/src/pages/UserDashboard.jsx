@@ -14,7 +14,7 @@ function UserDashboard({ token }) {
     }
     const loadingToast = toast.loading('Creating meeting...');
     try {
-        const res = await axios.post('http://127.0.0.1:8000/meetings', {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/meetings`, {
             title: meetingTitle,
             description,
             attendees: [{ email: "test@example.com" }]

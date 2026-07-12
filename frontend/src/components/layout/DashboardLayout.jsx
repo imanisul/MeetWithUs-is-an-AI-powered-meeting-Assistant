@@ -4,10 +4,18 @@ import { Navbar } from "./Navbar"
 import { Outlet, Navigate } from "react-router-dom"
 import { Toaster } from "react-hot-toast"
 
-export function DashboardLayout() {
-  const token = localStorage.getItem("token");
+import { useEffect } from "react"
+import { useSelector } from "react-redux"
 
-  if (!token) {
+export function DashboardLayout() {
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    // Force dark mode globally to preserve the premium aesthetic and fix text visibility
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
