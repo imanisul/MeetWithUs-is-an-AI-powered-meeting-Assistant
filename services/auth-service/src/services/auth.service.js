@@ -18,24 +18,13 @@ export const registerUser = async (userData) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the user first without orgId
+    // Create the user with GUEST role by default
     const user = await User.create({
         fullName,
         email,
         password: hashedPassword,
-        role: 'ORG_ADMIN',
+        role: 'GUEST',
     });
-
-    // Auto-create a personal workspace
-    const org = await Organization.create({
-        name: `${fullName.split(' ')[0]}'s Workspace`,
-        ownerId: user._id,
-        members: [{ userId: user._id, role: 'ORG_ADMIN' }]
-    });
-
-    // Assign the org to the user
-    user.organizationId = org._id;
-    await user.save();
 
     return user;
 };

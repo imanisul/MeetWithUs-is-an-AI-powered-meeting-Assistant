@@ -9,30 +9,21 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { useEffect, useState } from "react"
-import api from "@/services/api"
-import toast from "react-hot-toast"
+import { useNavigate } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
+import { meetingsApi } from "@/services/meetings.api"
 import { MeetingCreateDialog } from "@/components/meetings/MeetingCreateDialog"
 import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function MeetingList() {
-  const [meetings, setMeetings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate()
 
-  const fetchMeetings = async () => {
-    try {
-      const res = await api.get(`/meetings`);
-      setMeetings(res.data.data);
-    } catch (err) {
-      toast.error("Failed to load meetings");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading } = useQuery({
+    queryKey: ['meetings'],
+    queryFn: meetingsApi.getMeetings,
+  })
 
-  useEffect(() => {
-    fetchMeetings();
-  }, []);
+  const meetings = data?.data ? data.data : (Array.isArray(data) ? data : [])
 
   return (
     <AnimatedPage>
@@ -44,7 +35,7 @@ export function MeetingList() {
             Manage your organization's meetings.
           </p>
         </div>
-        <MeetingCreateDialog onMeetingCreated={fetchMeetings} />
+        <MeetingCreateDialog />
       </div>
 
       <Card>
@@ -63,7 +54,7 @@ export function MeetingList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                 </TableRow>
@@ -78,7 +69,7 @@ export function MeetingList() {
                     <TableCell>{new Date(meeting.startTime).toLocaleDateString()}</TableCell>
                     <TableCell>{meeting.attendees?.length || 0} participants</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => window.location.href = `/dashboard/meetings/${meeting._id}`}>View</Button>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/meetings/${meeting._id}`)}>View</Button>
                     </TableCell>
                   </TableRow>
                 ))

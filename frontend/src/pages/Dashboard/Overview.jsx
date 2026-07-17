@@ -1,13 +1,35 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, Users, Bot, CheckCircle2, TrendingUp, Sparkles, ArrowUpRight } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import api from "@/services/api"
 import { jwtDecode } from "jwt-decode"
+import { useNavigate } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
+import { meetingsApi } from "@/services/meetings.api"
 import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function Overview() {
-  const [stats, setStats] = useState({
+  const navigate = useNavigate()
+  
+  const [role, setRole] = useState(() => {
+    const token = localStorage.getItem("token")
+    if (token) {
+      try {
+        const decoded = jwtDecode(token)
+        return decoded.role || "GUEST"
+      } catch (e) {}
+    }
+    return "GUEST"
+  })
+  
+  const isOrgAdmin = role === "SUPER_ADMIN" || role === "ORG_ADMIN"
+
+  const { data: analyticsData } = useQuery({
+    queryKey: ['analytics'],
+    queryFn: meetingsApi.getAnalytics,
+  })
+
+  const stats = analyticsData?.data || {
     totalMeetings: 0,
     completedMeetings: 0,
     upcomingMeetings: 0,
@@ -20,29 +42,7 @@ export function Overview() {
       { name: "May", total: 0 },
       { name: "Jun", total: 0 },
     ]
-  })
-
-  const [role, setRole] = useState("GUEST");
-  const isOrgAdmin = role === "SUPER_ADMIN" || role === "ORG_ADMIN";
-
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (token) {
-          const decoded = jwtDecode(token);
-          setRole(decoded.role || "GUEST");
-        }
-        const res = await api.get(`/meetings/analytics`);
-        if (res.data && res.data.data) {
-          setStats(res.data.data);
-        }
-      } catch (error) {
-        console.error("Failed to load analytics", error);
-      }
-    };
-    fetchAnalytics();
-  }, []);
+  }
 
   const statCards = [
     {
@@ -116,7 +116,7 @@ export function Overview() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-white/5 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20 transition-all cursor-pointer" onClick={() => window.location.href = '/dashboard/meetings'}>
+        <Card className="border-white/5 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20 transition-all cursor-pointer" onClick={() => navigate('/dashboard/meetings')}>
           <CardContent className="p-6 flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
               <Users className="h-6 w-6 text-blue-400" />
@@ -128,7 +128,7 @@ export function Overview() {
           </CardContent>
         </Card>
         
-        <Card className="border-white/5 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 transition-all cursor-pointer" onClick={() => window.location.href = '/dashboard/documents'}>
+        <Card className="border-white/5 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 transition-all cursor-pointer" onClick={() => navigate('/dashboard/documents')}>
           <CardContent className="p-6 flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
               <Bot className="h-6 w-6 text-emerald-400" />
@@ -141,7 +141,7 @@ export function Overview() {
         </Card>
 
         {isOrgAdmin && (
-          <Card className="border-white/5 bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-all cursor-pointer" onClick={() => window.location.href = '/dashboard/organization'}>
+          <Card className="border-white/5 bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-all cursor-pointer" onClick={() => navigate('/dashboard/organization')}>
             <CardContent className="p-6 flex items-center gap-4">
               <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
                 <Sparkles className="h-6 w-6 text-purple-400" />

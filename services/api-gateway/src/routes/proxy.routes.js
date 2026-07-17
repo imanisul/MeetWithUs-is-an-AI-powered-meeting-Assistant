@@ -17,6 +17,17 @@ router.use(
 );
 
 router.use(
+    '/users',
+    createProxyMiddleware({
+        target: env.AUTH_SERVICE,
+        changeOrigin: true,
+        pathRewrite: (path, req) => {
+            return req.originalUrl.replace(/^\/users/, '/api/v1/users');
+        }
+    })
+);
+
+router.use(
     '/meetings',
     createProxyMiddleware({
         target: env.MEETING_SERVICE,

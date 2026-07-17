@@ -1,15 +1,20 @@
 import * as meetingService from '../services/meeting.service.js';
 
 export const createMeeting = async (req, res) => {
-    const meeting = await meetingService.createMeeting(
-        req.body,
-        req.user.id
-    );
+    try {
+        const meeting = await meetingService.createMeeting(
+            req.body,
+            req.user.id
+        );
 
-    res.status(201).json({
-        success : true,
-        data : meeting,
-    })
+        res.status(201).json({
+            success : true,
+            data : meeting,
+        });
+    } catch (error) {
+        console.error("Error creating meeting:", error);
+        res.status(500).json({ success: false, message: error.message || "Failed to create meeting" });
+    }
 };
 
 export const updateAI = async (req, res) => {

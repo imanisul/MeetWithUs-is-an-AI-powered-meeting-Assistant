@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { jwtDecode } from "jwt-decode"
 import toast from "react-hot-toast"
 import { AnimatedPage } from "@/components/layout/AnimatedPage"
+import api from "@/services/api"
 
 export function ProfileSettings() {
   const [profile, setProfile] = useState({
@@ -17,29 +18,35 @@ export function ProfileSettings() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
+    const fetchProfile = async () => {
       try {
-        const decoded = jwtDecode(token);
+        const res = await api.get('/users/me');
+        const user = res.data.data;
         setProfile({
-          fullName: decoded.fullName || decoded.email?.split("@")[0] || "User",
-          email: decoded.email,
-          role: decoded.role
+          fullName: user.fullName || "User",
+          email: user.email,
+          role: user.role
         });
       } catch (e) {
-        console.error(e);
+        console.error("Failed to load profile", e);
       }
-    }
+    };
+    fetchProfile();
   }, []);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     const toastId = toast.loading("Saving profile...");
-    setTimeout(() => {
+    try {
+      await api.put('/users/me', { fullName: profile.fullName });
       toast.success("Profile updated successfully", { id: toastId });
+    } catch (e) {
+      toast.error("Failed to update profile", { id: toastId });
+      console.error(e);
+    } finally {
       setIsSaving(false);
-    }, 1000);
+    }
   };
 
   const userInitials = profile.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);

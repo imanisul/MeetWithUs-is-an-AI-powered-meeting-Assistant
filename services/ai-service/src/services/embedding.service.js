@@ -4,7 +4,7 @@ import {env} from '../config/env.js';
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
 export const embeddingModel = genAI.getGenerativeModel({
-    model : 'text-embedding-004',
+    model : 'gemini-embedding-001',
 });
 
 export const createEmbedding = async (text) => {

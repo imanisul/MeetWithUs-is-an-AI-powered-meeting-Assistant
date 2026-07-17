@@ -52,6 +52,9 @@ services:
     container_name: meetwithus-auth-service
     ports:
       - "8001:8001"
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
     environment:
       - PORT=8001
       - MONGO_URI=mongodb://mongodb:27017/meetwithus
@@ -92,9 +95,13 @@ services:
     container_name: meetwithus-ai-service
     ports:
       - "8003:8003"
+    volumes:
+      - ./services/ai-service:/app
+      - /app/node_modules
     environment:
       - PORT=8003
       - MONGO_URI=mongodb://mongodb:27017/meetwithus
+      - CHROMA_URL=http://chromadb:8000
     networks:
       - meetwithus-network
 
@@ -111,6 +118,18 @@ services:
       - EMAIL_PASS=testpass
     depends_on:
       - rabbitmq
+    networks:
+      - meetwithus-network
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: meetwithus-chromadb
+    ports:
+      - "8006:8000"
+    environment:
+      - IS_PERSISTENT=TRUE
+    volumes:
+      - chromadb_data:/chroma/chroma
     networks:
       - meetwithus-network
 
@@ -136,3 +155,4 @@ networks:
 
 volumes:
   mongodb_data:
+  chromadb_data:

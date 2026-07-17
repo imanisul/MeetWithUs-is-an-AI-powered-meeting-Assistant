@@ -11,7 +11,7 @@ export const createMeeting = async (meetingData, hostId) => {
     const meetingCode = generateMeetingCode();
 
 
-    let meetingLink = `https://meetwithus.com/meeting/${meetingCode}`;
+    let meetingLink = meetingData.meetingLink || `https://meetwithus.com/meeting/${meetingCode}`;
     if (meetingData.useGoogleMeet) {
         // Generate a mock Google Meet style link
         const code = meetingCode.toLowerCase();

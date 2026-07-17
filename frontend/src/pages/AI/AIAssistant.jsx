@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Send, Bot, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,26 +8,38 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import api from "@/services/api"
 import toast from "react-hot-toast"
 import { AnimatedPage } from "@/components/layout/AnimatedPage"
+import { useSearchParams } from "react-router-dom"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export function AIAssistant() {
+  const [searchParams] = useSearchParams()
+  const initialQuery = searchParams.get("q") || ""
+  
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hi! I'm your AI Meeting Assistant. You can ask me anything about past meetings or uploaded documents." }
   ])
-  const [input, setInput] = useState("")
+  const [input, setInput] = useState(initialQuery)
   const [isLoading, setIsLoading] = useState(false)
+  const hasInitialQueryRun = useRef(false)
 
-  const handleSend = async (e) => {
-    e.preventDefault()
-    if (!input.trim() || isLoading) return
+  useEffect(() => {
+    if (initialQuery && !hasInitialQueryRun.current) {
+      hasInitialQueryRun.current = true
+      submitQuery(initialQuery)
+    }
+  }, [initialQuery])
 
-    const userMessage = input.trim()
+  const submitQuery = async (queryText) => {
+    if (!queryText.trim() || isLoading) return
+    
     setInput("")
-    setMessages(prev => [...prev, { role: "user", content: userMessage }])
+    setMessages(prev => [...prev, { role: "user", content: queryText }])
     setIsLoading(true)
 
     try {
       const res = await api.get(`/ai/search`, {
-        params: { query: userMessage }
+        params: { q: queryText }
       })
       
       setMessages(prev => [...prev, { 
@@ -42,6 +54,11 @@ export function AIAssistant() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSend = async (e) => {
+    e.preventDefault()
+    submitQuery(input)
   }
 
   return (
@@ -83,7 +100,15 @@ export function AIAssistant() {
                         : "bg-muted rounded-tl-sm text-foreground"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === "user" ? (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    ) : (
+                      <div className="text-sm leading-relaxed whitespace-pre-wrap markdown-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                   
                   {msg.sources && msg.sources.length > 0 && (

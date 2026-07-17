@@ -6,9 +6,24 @@ import { createEmbedding } from "./embedding.service.js";
 import { storeChunks, searchChunks } from "./vector.service.js";
 import { model } from "../config/gemini.js";
 
-export const queryVectorStore = async (query) => {
+export const queryVectorStore = async (query, user) => {
+    // 1. Fetch allowed documents for the user
+    const allowedDocs = await Document.find({
+        $or: [
+            { uploadedBy: user.id },
+            { "accessList.email": user.email }
+        ]
+    }).select('_id');
+    
+    if (allowedDocs.length === 0) {
+        return { answer: "I couldn't find any relevant meeting information for your query. You may not have access to any documents.", sources: [] };
+    }
+    
+    const allowedDocIds = allowedDocs.map(d => d._id.toString());
+
+    // 2. Search only in allowed documents
     const queryEmbedding = await createEmbedding(query);
-    const results = await searchChunks(queryEmbedding, 3);
+    const results = await searchChunks(queryEmbedding, allowedDocIds, 3);
     
     const documents = results.documents[0] || [];
     
@@ -34,6 +49,7 @@ export const processDocument = async (file, uploadedBy) => {
         fileName: file.originalname,
         filePath: file.path,
         extractedText: pdf.text,
+        size: file.size,
         uploadedBy,
     });
 

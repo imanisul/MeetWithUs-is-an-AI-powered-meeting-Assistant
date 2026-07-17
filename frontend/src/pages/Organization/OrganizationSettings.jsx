@@ -20,18 +20,16 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { jwtDecode } from "jwt-decode"
-import api from "@/services/api"
+import { organizationApi } from "@/services/organization.api"
+import { usersApi } from "@/services/users.api"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import toast from "react-hot-toast"
 import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function OrganizationSettings() {
-  const [org, setOrg] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState("MEMBER")
-  const [isInviting, setIsInviting] = useState(false)
-  
-  const [allUsers, setAllUsers] = useState([])
   
   const token = localStorage.getItem("token")
   let currentUserRole = "GUEST"
@@ -44,64 +42,53 @@ export function OrganizationSettings() {
 
   const isOrgAdmin = currentUserRole === "ORG_ADMIN" || currentUserRole === "SUPER_ADMIN"
 
-  useEffect(() => {
-    fetchOrg()
-    fetchAllUsers()
-  }, [])
+  const { data: orgData, isLoading: isLoadingOrg } = useQuery({
+    queryKey: ['organization'],
+    queryFn: organizationApi.getOrganization,
+  })
 
-  const fetchAllUsers = async () => {
-    try {
-      const res = await api.get(`/auth/users`)
-      setAllUsers(res.data.data)
-    } catch (error) {
-      console.error("Failed to fetch all users")
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: usersApi.getAllUsers,
+  })
+
+  const inviteMutation = useMutation({
+    mutationFn: organizationApi.inviteMember,
+    onSuccess: () => {
+      toast.success("Member added to organization!")
+      setInviteEmail("")
+      queryClient.invalidateQueries({ queryKey: ['organization'] })
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to invite member")
     }
-  }
+  })
 
-  const fetchOrg = async () => {
-    try {
-      const res = await api.get(`/auth/me`)
-      setOrg(res.data.data.organization)
-      if (res.data.data.organization) {
-        setOrg(res.data.data.organization)
-      }
-    } catch (error) {
-      toast.error("Failed to load organization details")
-    } finally {
-      setIsLoading(false)
+  const roleMutation = useMutation({
+    mutationFn: (variables) => organizationApi.updateRole(variables),
+    onSuccess: () => {
+      toast.success("Role updated!")
+      queryClient.invalidateQueries({ queryKey: ['organization'] })
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to update role")
     }
-  }
+  })
 
-  const handleInvite = async (e) => {
+  const handleInvite = (e) => {
     e.preventDefault()
     if (!inviteEmail) return
-
-    setIsInviting(true)
-    const toastId = toast.loading("Inviting member...")
-    try {
-      await api.post(`/auth/organization/invite`, { email: inviteEmail, role: inviteRole })
-      toast.success("Member added to organization!", { id: toastId })
-      setInviteEmail("")
-      fetchOrg() // refresh list
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to invite member", { id: toastId })
-    } finally {
-      setIsInviting(false)
-    }
+    inviteMutation.mutate({ email: inviteEmail, role: inviteRole })
   }
 
-  const handleRoleChange = async (memberId, newRole) => {
-    const toastId = toast.loading("Updating role...")
-    try {
-      await api.put(`/auth/organization/role`, { memberId, role: newRole })
-      toast.success("Role updated!", { id: toastId })
-      fetchOrg()
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update role", { id: toastId })
-    }
+  const handleRoleChange = (memberId, newRole) => {
+    roleMutation.mutate({ memberId, role: newRole })
   }
 
-  if (isLoading) {
+  const org = orgData?.data ? orgData.data : (orgData?.success ? null : orgData)
+  const allUsers = usersData?.data ? usersData.data : (Array.isArray(usersData) ? usersData : [])
+
+  if (isLoadingOrg) {
     return <div className="p-8 text-center text-muted-foreground">Loading workspace details...</div>
   }
 

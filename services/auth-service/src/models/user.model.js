@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
         role: {
             type: String,
             enum: ['SUPER_ADMIN', 'ORG_ADMIN', 'MEMBER', 'GUEST'],
-            default: 'ORG_ADMIN' // Default to ORG_ADMIN since they create their own workspace on signup
+            default: 'GUEST' // Changed from ORG_ADMIN to GUEST as per user requirement
         },
         organizationId: {
             type: mongoose.Schema.Types.ObjectId,

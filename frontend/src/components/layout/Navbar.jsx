@@ -27,20 +27,42 @@ export function Navbar() {
   const [notifications, setNotifications] = useState([]);
 
   // Decode user info from JWT
-  let userName = "User";
   let userEmail = "";
-  let userInitials = "U";
-  let userRole = "GUEST";
+  let defaultRole = "GUEST";
   try {
     const token = localStorage.getItem("token");
     if (token) {
       const decoded = jwtDecode(token);
       userEmail = decoded.email || "";
-      userName = decoded.fullName || userEmail.split("@")[0] || "User";
-      userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-      userRole = decoded.role || "GUEST";
+      defaultRole = decoded.role || "GUEST";
     }
   } catch (e) {}
+
+  const [userName, setUserName] = useState("User");
+  const [userRole, setUserRole] = useState(defaultRole);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/users/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const user = res.data.data;
+          if (user) {
+            setUserName(user.fullName || "User");
+            setUserRole(user.role || defaultRole);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch user in Navbar", e);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   useEffect(() => {
     const fetchNotifications = async () => {

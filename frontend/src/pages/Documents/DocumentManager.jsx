@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { UploadCloud, FileText, Trash2, Search, Loader2 } from "lucide-react"
+import { UploadCloud, FileText, Trash2, Search, Loader2, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -11,19 +11,51 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Separator } from "@/components/ui/separator"
-import api from "@/services/api"
+import { documentsApi } from "@/services/documents.api"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import toast from "react-hot-toast"
 import { AnimatedPage } from "@/components/layout/AnimatedPage"
+import { useNavigate } from "react-router-dom"
+import { DocumentAccessModal } from "@/components/DocumentAccessModal"
+import { Shield } from "lucide-react"
 
 export function DocumentManager() {
-  const [documents, setDocuments] = useState([])
-  const [isUploading, setIsUploading] = useState(false)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   
-  // Basic mock fetch for visual UI right now since there isn't a GET /documents endpoint yet
-  // Usually this would call an API
+  const [searchQuery, setSearchQuery] = useState("")
+  const [accessModalDoc, setAccessModalDoc] = useState(null)
   
-  const handleFileUpload = async (e) => {
+  const { data: documentsData, isLoading } = useQuery({
+    queryKey: ['documents'],
+    queryFn: documentsApi.getDocuments,
+  })
+
+  const documents = documentsData?.data ? documentsData.data : (Array.isArray(documentsData) ? documentsData : [])
+
+  const uploadMutation = useMutation({
+    mutationFn: documentsApi.uploadDocument,
+    onSuccess: () => {
+      toast.success("Document uploaded & processed successfully!")
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to upload document")
+    }
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: documentsApi.deleteDocument,
+    onSuccess: () => {
+      toast.success("Document deleted successfully")
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to delete document")
+    }
+  })
+  
+  const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -32,36 +64,28 @@ export function DocumentManager() {
       return;
     }
 
-    setIsUploading(true);
-    const toastId = toast.loading("Uploading and embedding document...");
-
     const formData = new FormData();
     formData.append("document", file);
 
-    try {
-      const res = await api.post(`/documents/upload`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
-      
-      toast.success("Document uploaded & processed successfully!", { id: toastId });
-      
-      // Update local state to show the new doc
-      setDocuments(prev => [{
-        _id: res.data.document?._id || Date.now().toString(),
-        fileName: file.name,
-        uploadedAt: new Date().toISOString(),
-        size: (file.size / 1024).toFixed(2) + " KB"
-      }, ...prev]);
+    uploadMutation.mutate(formData, {
+      onSettled: () => {
+        e.target.value = null;
+      }
+    })
+  }
 
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to upload document", { id: toastId });
-    } finally {
-      setIsUploading(false);
-      e.target.value = null; // Reset input
-    }
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    navigate(`/dashboard/ai?q=${encodeURIComponent(searchQuery)}`);
+  }
+
+  const formatSize = (bytes) => {
+    if (!bytes) return "Unknown";
+    const kb = bytes / 1024;
+    if (kb < 1024) return kb.toFixed(2) + " KB";
+    return (kb / 1024).toFixed(2) + " MB";
   }
 
   return (
@@ -93,25 +117,38 @@ export function DocumentManager() {
                 accept=".pdf"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={handleFileUpload}
-                disabled={isUploading}
+                disabled={uploadMutation.isPending}
               />
-              <Button disabled={isUploading} className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0">
-                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Select File"}
+              <Button disabled={uploadMutation.isPending} className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0">
+                {uploadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Select File"}
               </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card className="md:col-span-2 shadow-md border-white/5 bg-white/[0.03] backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 gap-4 flex-wrap">
             <div className="space-y-1">
               <CardTitle className="text-white">Knowledge Base</CardTitle>
               <CardDescription className="text-slate-400">Documents indexed in the RAG Vector Store</CardDescription>
             </div>
-            <div className="relative w-64">
+            <form onSubmit={handleSearch} className="relative w-full sm:w-80 flex">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-              <Input placeholder="Search files..." className="pl-10 h-10 bg-white/5 border-white/10 text-white rounded-lg focus-visible:ring-blue-500/50" />
-            </div>
+              <Input 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Ask AI about decisions/meetings..." 
+                className="pl-10 pr-20 h-10 bg-white/5 border-white/10 text-white rounded-lg focus-visible:ring-blue-500/50 w-full" 
+              />
+              <Button 
+                type="submit"
+                size="sm"
+                className="absolute right-1 top-1 h-8 bg-blue-500 hover:bg-blue-600 text-white"
+                disabled={!searchQuery.trim()}
+              >
+                Ask
+              </Button>
+            </form>
           </CardHeader>
           <CardContent>
             <Table>
@@ -124,7 +161,13 @@ export function DocumentManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {documents.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center h-32 text-muted-foreground">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : documents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center h-32 text-muted-foreground">
                       No documents uploaded yet.
@@ -137,10 +180,26 @@ export function DocumentManager() {
                         <FileText className="h-4 w-4 text-blue-500" />
                         {doc.fileName}
                       </TableCell>
-                      <TableCell>{new Date(doc.uploadedAt).toLocaleDateString()}</TableCell>
-                      <TableCell>{doc.size}</TableCell>
+                      <TableCell>{new Date(doc.createdAt || doc.uploadedAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{formatSize(doc.size)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 mr-2"
+                          onClick={() => setAccessModalDoc(doc)}
+                          title="Manage Access"
+                        >
+                          <Shield className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => deleteMutation.mutate(doc._id)}
+                          disabled={deleteMutation.isPending}
+                          title="Delete Document"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -152,6 +211,15 @@ export function DocumentManager() {
           </CardContent>
         </Card>
       </div>
+      
+      {accessModalDoc && (
+        <DocumentAccessModal 
+          document={accessModalDoc} 
+          isOpen={!!accessModalDoc} 
+          setIsOpen={(open) => !open && setAccessModalDoc(null)} 
+        />
+      )}
     </AnimatedPage>
   )
 }
+

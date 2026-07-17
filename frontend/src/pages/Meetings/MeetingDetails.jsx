@@ -6,107 +6,100 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import api from "@/services/api"
+import { meetingsApi } from "@/services/meetings.api"
+import { aiApi } from "@/services/ai.api"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import toast from "react-hot-toast"
 import { AnimatedPage } from "@/components/layout/AnimatedPage"
 
 export function MeetingDetails() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   
-  // Using mock state for the demo if ID isn't provided or API isn't ready
-  const [meeting, setMeeting] = useState({
-    title: "Loading...",
-    date: "",
-    time: "",
-    attendees: [],
-    status: "",
-    notes: "",
-    aiSummary: "",
-    aiActionItems: "",
-    meetingLink: ""
-  });
+  const [notes, setNotes] = useState("")
 
-  const [notes, setNotes] = useState("");
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const [isGeneratingActionItems, setIsGeneratingActionItems] = useState(false);
+  const { data: meetingData, isLoading } = useQuery({
+    queryKey: ['meetings', id],
+    queryFn: () => meetingsApi.getMeetingById(id),
+    enabled: !!id,
+  })
+
+  const m = meetingData?.data
 
   useEffect(() => {
-    const fetchMeeting = async () => {
-      try {
-        const res = await api.get(`/meetings/${id}`);
-        const m = res.data.data;
-        if (!m) {
-          toast.error("Meeting not found");
-          return;
-        }
-        setMeeting({
-          title: m.title || "Untitled Meeting",
-          date: m.startTime ? new Date(m.startTime).toLocaleDateString() : "No Date",
-          time: m.startTime ? new Date(m.startTime).toLocaleTimeString() : "No Time",
-          attendees: m.attendees || [],
-          status: m.status || "Scheduled",
-          notes: m.notes || "",
-          aiSummary: m.aiSummary || "",
-          aiActionItems: m.aiActionItems || "",
-          meetingLink: m.meetingLink || "",
-          agenda: m.agenda || ""
-        });
-        setNotes(m.notes || "");
-      } catch (error) {
-        toast.error("Failed to load meeting details");
-      }
-    };
-    if (id) fetchMeeting();
-  }, [id]);
-
-  const handleGenerateSummary = async () => {
-    if (!notes.trim()) return toast.error("Please add some meeting notes first.");
-    
-    setIsGeneratingSummary(true);
-    const toastId = toast.loading("Generating AI Summary...");
-    try {
-      const res = await api.post(`/ai/generate-summary`, { notes });
-      setMeeting(prev => ({ ...prev, aiSummary: res.data.data }));
-      toast.success("Summary generated!", { id: toastId });
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to generate summary", { id: toastId });
-    } finally {
-      setIsGeneratingSummary(false);
+    if (m?.notes) {
+      setNotes(m.notes)
     }
-  };
+  }, [m?.notes])
 
-  const handleGenerateActionItems = async () => {
-    if (!notes.trim()) return toast.error("Please add some meeting notes first.");
-    
-    setIsGeneratingActionItems(true);
-    const toastId = toast.loading("Extracting Action Items...");
-    try {
-      const res = await api.post(`/ai/generate-action-items`, { notes });
-      setMeeting(prev => ({ ...prev, aiActionItems: res.data.data }));
-      toast.success("Action items extracted!", { id: toastId });
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to extract action items", { id: toastId });
-    } finally {
-      setIsGeneratingActionItems(false);
-    }
-  };
+  const meeting = {
+    title: m?.title || "Untitled Meeting",
+    date: m?.startTime ? new Date(m.startTime).toLocaleDateString() : "No Date",
+    time: m?.startTime ? new Date(m.startTime).toLocaleTimeString() : "No Time",
+    attendees: m?.attendees || [],
+    status: m?.status || "Scheduled",
+    notes: m?.notes || "",
+    aiSummary: m?.aiSummary || "",
+    aiActionItems: m?.aiActionItems || "",
+    meetingLink: m?.meetingLink || "",
+    agenda: m?.agenda || ""
+  }
 
-  const handleSave = async () => {
-    const toastId = toast.loading("Saving changes...");
-    try {
-      await api.put(`/meetings/${id}/ai`, { 
-        notes, 
-        summary: meeting.aiSummary, 
-        actionItems: meeting.aiActionItems 
-      });
-      toast.success("Meeting updated successfully", { id: toastId });
-    } catch (error) {
-      toast.error("Failed to save changes", { id: toastId });
+  const saveMutation = useMutation({
+    mutationFn: (updateData) => meetingsApi.updateMeeting(id, updateData),
+    onSuccess: () => {
+      toast.success("Meeting updated successfully")
+      queryClient.invalidateQueries({ queryKey: ['meetings', id] })
+    },
+    onError: () => {
+      toast.error("Failed to save changes")
     }
-  };
+  })
+
+  const handleSave = () => {
+    saveMutation.mutate({ 
+      notes, 
+      summary: meeting.aiSummary, 
+      actionItems: meeting.aiActionItems 
+    })
+  }
+
+  const summaryMutation = useMutation({
+    mutationFn: (data) => aiApi.generateSummary(data),
+    onSuccess: (res) => {
+      toast.success("Summary generated!")
+      saveMutation.mutate({ notes, summary: res.data }) // Autosave summary
+    },
+    onError: () => {
+      toast.error("Failed to generate summary")
+    }
+  })
+
+  const handleGenerateSummary = () => {
+    if (!notes.trim()) return toast.error("Please add some meeting notes first.")
+    summaryMutation.mutate({ notes })
+  }
+
+  const actionItemsMutation = useMutation({
+    mutationFn: (data) => aiApi.generateActionItems(data),
+    onSuccess: (res) => {
+      toast.success("Action items extracted!")
+      saveMutation.mutate({ notes, summary: meeting.aiSummary, actionItems: res.data }) // Autosave action items
+    },
+    onError: () => {
+      toast.error("Failed to extract action items")
+    }
+  })
+
+  const handleGenerateActionItems = () => {
+    if (!notes.trim()) return toast.error("Please add some meeting notes first.")
+    actionItemsMutation.mutate({ notes })
+  }
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-muted-foreground">Loading meeting details...</div>
+  }
 
   return (
     <AnimatedPage>
@@ -126,8 +119,8 @@ export function MeetingDetails() {
             <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {meeting.attendees?.length || 0} Attendees</span>
           </div>
         </div>
-        <Button onClick={handleSave} className="gap-2">
-          <Save className="h-4 w-4" /> Save Changes
+        <Button onClick={handleSave} disabled={saveMutation.isPending} className="gap-2">
+          <Save className="h-4 w-4" /> {saveMutation.isPending ? "Saving..." : "Save Changes"}
         </Button>
       </div>
 
@@ -179,8 +172,8 @@ export function MeetingDetails() {
                   <Sparkles className="h-5 w-5" /> Executive Summary
                 </CardTitle>
               </div>
-              <Button size="sm" variant="secondary" onClick={handleGenerateSummary} disabled={isGeneratingSummary}>
-                {isGeneratingSummary ? "Generating..." : "Generate AI Summary"}
+              <Button size="sm" variant="secondary" onClick={handleGenerateSummary} disabled={summaryMutation.isPending}>
+                {summaryMutation.isPending ? "Generating..." : "Generate AI Summary"}
               </Button>
             </CardHeader>
             <CardContent className="p-6">
@@ -204,8 +197,8 @@ export function MeetingDetails() {
                   <CheckSquare className="h-5 w-5" /> Action Items
                 </CardTitle>
               </div>
-              <Button size="sm" variant="secondary" onClick={handleGenerateActionItems} disabled={isGeneratingActionItems}>
-                {isGeneratingActionItems ? "Extracting..." : "Extract Action Items"}
+              <Button size="sm" variant="secondary" onClick={handleGenerateActionItems} disabled={actionItemsMutation.isPending}>
+                {actionItemsMutation.isPending ? "Extracting..." : "Extract Action Items"}
               </Button>
             </CardHeader>
             <CardContent className="p-6">

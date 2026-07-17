@@ -14,10 +14,20 @@ const documentSchema =  new mongoose.Schema(
             type : String,
             required: true
         }, 
+        size: {
+            type: Number,
+            required: false
+        },
         uploadedBy : {
             type: String,
             required : true,
-        }
+        },
+        accessList: [
+            {
+                email: { type: String, required: true },
+                role: { type: String, enum: ['ADMIN', 'CO_ADMIN', 'USER'], default: 'USER' }
+            }
+        ]
 
     }, {timestamps: true});
 

@@ -5,7 +5,8 @@ import { loginSuccess } from "@/store/slices/authSlice"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import api from "@/services/api"
+import { authApi } from "@/services/auth.api"
+import { useMutation } from "@tanstack/react-query"
 import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Users, Eye, EyeOff, Sparkles, ArrowRight } from "lucide-react"
+import { Users, Eye, EyeOff, Sparkles, ArrowRight, Loader2 } from "lucide-react"
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -27,7 +28,6 @@ const formSchema = z.object({
 const Login = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm({
@@ -38,20 +38,20 @@ const Login = () => {
     },
   })
 
-  const onSubmit = async (values) => {
-    setIsLoading(true)
-    const toastId = toast.loading("Signing in...")
-    
-    try {
-      const res = await api.post(`/auth/login`, values)
-      dispatch(loginSuccess({ token: res.data.data.accessToken, user: null }))
-      toast.success("Login successful!", { id: toastId })
+  const loginMutation = useMutation({
+    mutationFn: authApi.login,
+    onSuccess: (data) => {
+      dispatch(loginSuccess({ token: data.data.accessToken, user: data.data.user }))
+      toast.success("Login successful!")
       navigate("/dashboard")
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Login failed", { id: toastId })
-    } finally {
-      setIsLoading(false)
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Login failed")
     }
+  })
+
+  const onSubmit = (values) => {
+    loginMutation.mutate(values)
   }
 
   return (
@@ -149,8 +149,8 @@ const Login = () => {
                   )}
                 />
                 
-                <Button type="submit" className="w-full h-12 text-md font-semibold mt-4 group transition-all" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : (
+                <Button type="submit" className="w-full h-12 text-md font-semibold mt-4 group transition-all" disabled={loginMutation.isPending}>
+                  {loginMutation.isPending ? "Signing in..." : (
                     <>
                       Sign in to workspace
                       <ArrowRight className="ml-2 h-4 w-4 opacity-70 group-hover:translate-x-1 transition-transform" />

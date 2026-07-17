@@ -30,11 +30,14 @@ export const storeChunks = async (
     });
 };
 
-export const searchChunks = async (queryEmbedding, limit = 3) => {
+export const searchChunks = async (queryEmbedding, allowedDocIds, limit = 3) => {
     const collection = await getCollection();
     const results = await collection.query({
         queryEmbeddings: [queryEmbedding],
         nResults: limit,
+        where: {
+            documentId: { $in: allowedDocIds }
+        }
     });
     return results;
 };
